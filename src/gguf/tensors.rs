@@ -107,6 +107,8 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
 fn get_weight_entry_size(quant_type: u32) -> Result<f32, String> {
   match quant_type {
     0 => Ok(4.0), // f32
+    1 => Ok(2.0), // f16
+    36 => Ok(0.5), // Ternary quantization (2 bits per element)
     42 => Ok(0.5), // Ternary quantization (2 bits per element)
     _ => Err(format!("Unknown quantization type: {}", quant_type)),
   }

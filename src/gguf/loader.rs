@@ -37,3 +37,30 @@ pub fn load(path: &str) -> Result<GgufFile, String> {
     tensors: tensors,
   })
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_bonsai_gguf() {
+    let bonsai_model = load("./models/bonsai-1.7.gguf")
+      .expect("Failed to load model");
+
+    assert_eq!(bonsai_model.header.kv_count, 35);
+    assert_eq!(bonsai_model.metadata.len(), 35);
+    assert_eq!(bonsai_model.header.tensor_count, 310);
+    assert_eq!(bonsai_model.tensors.len(), 310);
+  }
+
+  #[test]
+  fn test_falcon_gguf() {
+    let falcon_model = load("./models/falcon-3-1b.gguf")
+      .expect("Failed to load model");
+
+    assert_eq!(falcon_model.header.kv_count, 23);
+    assert_eq!(falcon_model.metadata.len(), 23);
+    assert_eq!(falcon_model.header.tensor_count, 165);
+    assert_eq!(falcon_model.tensors.len(), 165);
+  }
+}
