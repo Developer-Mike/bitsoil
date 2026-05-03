@@ -102,6 +102,8 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
   Ok(weights)
 }
 
+// TODO: Add support for other quant types
+// https://github.com/ggml-org/llama.cpp/blob/d05fe1d7dadbf8943c8f1903fcf65b935ddab839/gguf-py/gguf/constants.py#L3993
 fn get_weight_entry_size(quant_type: u32) -> Result<f32, String> {
   match quant_type {
     0 => Ok(4.0), // f32
