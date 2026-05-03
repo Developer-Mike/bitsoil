@@ -6,6 +6,7 @@ use crate::gguf::header;
 use crate::gguf::metadata;
 use crate::gguf::tensors;
 
+#[allow(dead_code)]
 pub struct GgufFile {
   pub header: header::GgufHeader,
   pub metadata: HashMap<String, metadata::GgufMetadataValue>,

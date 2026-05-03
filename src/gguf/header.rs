@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub struct GgufHeader {
   pub version: u32,
   pub kv_count: u64,

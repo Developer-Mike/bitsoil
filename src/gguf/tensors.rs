@@ -2,11 +2,13 @@ use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 pub struct GgufTensor {
   pub info: GgufTensorInfo,
   pub weights: Vec<u8>,
 }
 
+#[allow(dead_code)]
 pub struct GgufTensorInfo {
   name: String,
   shape: Vec<u64>,
