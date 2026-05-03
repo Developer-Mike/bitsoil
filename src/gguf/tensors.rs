@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::collections::HashMap;
 
 pub struct GgufTensor {
@@ -15,13 +15,21 @@ pub struct GgufTensorInfo {
 }
 
 pub fn parse(reader: &mut BufReader<File>, tensors_count: u64) -> Result<HashMap<String, GgufTensor>, String> {
-  let mut tensors = HashMap::new();
+  let mut tensor_infos = Vec::with_capacity(tensors_count as usize);
 
   for _ in 0..tensors_count {
     let info = parse_info(reader)?;
+    tensor_infos.push(info);
+  }
 
-    println!("Parsed tensor: {} with shape {:?} and quantization type {}", info.name, info.shape, info.quant_type);
+  // Get next 32 byte boundary aligned offset
+  let offset = reader.seek(SeekFrom::Current(0))
+    .map_err(|e| format!("Failed to get current reader offset: {}", e))?;
+  let weight_offset = offset + (32 - (offset % 32)) % 32;
 
+  let mut tensors = HashMap::new();
+  for mut info in tensor_infos {
+    info.offset = weight_offset + info.offset;
     let weights = parse_weights(reader, &info)?;
 
     tensors.insert(info.name.clone(), GgufTensor {
@@ -79,5 +87,30 @@ fn parse_info(reader: &mut BufReader<File>) -> Result<GgufTensorInfo, String> {
 }
 
 fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<Vec<u8>, String> {
-  Ok(Vec::new())
+  let num_elements: u64 = info.shape.iter().product();
+  let element_size: u64 = get_weight_entry_size(info.quant_type)?;
+  let total_size = (num_elements * element_size) as usize;
+
+  // read 16 bytes for debugging
+  let mut debug_bytes = [0u8; 16];
+  reader.seek(SeekFrom::Start(info.offset))
+    .map_err(|e| format!("Failed to seek to tensor weights: {}", e))?;
+  reader.read_exact(&mut debug_bytes)
+    .map_err(|e| format!("Failed to read debug bytes: {}", e))?;
+  println!("Debug bytes for tensor {} with quantization type {}: {:02x?}", info.name, info.quant_type, debug_bytes);
+
+  let mut weights = vec![0u8; total_size];
+  reader.seek(SeekFrom::Start(info.offset))
+    .map_err(|e| format!("Failed to seek to tensor weights: {}", e))?;
+  reader.read_exact(&mut weights)
+    .map_err(|e| format!("Failed to read tensor weights: {}", e))?;
+
+  Ok(weights)
+}
+
+fn get_weight_entry_size(quant_type: u32) -> Result<u64, String> {
+  match quant_type {
+    0 => Ok(4), // f32
+    _ => Err(format!("Unknown quantization type: {}", quant_type)),
+  }
 }
