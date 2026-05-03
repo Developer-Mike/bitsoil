@@ -4,10 +4,12 @@ use std::collections::HashMap;
 
 use crate::gguf::header;
 use crate::gguf::metadata;
+use crate::gguf::tensors;
 
 pub struct GgufFile {
   pub header: header::GgufHeader,
   pub metadata: HashMap<String, metadata::GgufMetadataValue>,
+  pub tensors: HashMap<String, tensors::GgufTensor>,
 }
 
 pub fn load(path: &str) -> Result<GgufFile, String> {
@@ -25,8 +27,12 @@ pub fn load(path: &str) -> Result<GgufFile, String> {
   // Read the metadata
   let metadata = metadata::parse(&mut reader, header.kv_count)?;
 
+  // Read the tensors
+  let tensors = tensors::parse(&mut reader, header.tensor_count)?;
+
   Ok(GgufFile {
     header: header,
     metadata: metadata,
+    tensors: tensors,
   })
 }

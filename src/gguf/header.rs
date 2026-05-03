@@ -25,8 +25,8 @@ pub fn parse(header: &[u8; 24]) -> Result<GgufHeader, String> {
   );
 
   Ok(GgufHeader {
-    version,
-    kv_count,
-    tensor_count,
+    version: version,
+    kv_count: kv_count,
+    tensor_count: tensor_count,
   })
 }

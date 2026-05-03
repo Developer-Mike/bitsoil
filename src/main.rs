@@ -5,4 +5,5 @@ fn main() {
     .expect("Failed to load model");
 
   dbg!(model.metadata.len());
+  dbg!(model.tensors.len());
 }
