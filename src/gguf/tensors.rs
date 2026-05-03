@@ -88,16 +88,8 @@ fn parse_info(reader: &mut BufReader<File>) -> Result<GgufTensorInfo, String> {
 
 fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<Vec<u8>, String> {
   let num_elements: u64 = info.shape.iter().product();
-  let element_size: u64 = get_weight_entry_size(info.quant_type)?;
+  let element_size: u64 = get_weight_entry_size(info.quant_type)? as u64;
   let total_size = (num_elements * element_size) as usize;
-
-  // read 16 bytes for debugging
-  let mut debug_bytes = [0u8; 16];
-  reader.seek(SeekFrom::Start(info.offset))
-    .map_err(|e| format!("Failed to seek to tensor weights: {}", e))?;
-  reader.read_exact(&mut debug_bytes)
-    .map_err(|e| format!("Failed to read debug bytes: {}", e))?;
-  println!("Debug bytes for tensor {} with quantization type {}: {:02x?}", info.name, info.quant_type, debug_bytes);
 
   let mut weights = vec![0u8; total_size];
   reader.seek(SeekFrom::Start(info.offset))
@@ -108,9 +100,10 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
   Ok(weights)
 }
 
-fn get_weight_entry_size(quant_type: u32) -> Result<u64, String> {
+fn get_weight_entry_size(quant_type: u32) -> Result<f32, String> {
   match quant_type {
-    0 => Ok(4), // f32
+    0 => Ok(4.0), // f32
+    42 => Ok(0.5), // Ternary quantization (2 bits per element)
     _ => Err(format!("Unknown quantization type: {}", quant_type)),
   }
 }
