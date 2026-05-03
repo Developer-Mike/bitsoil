@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::collections::HashMap;
 
-#[derive(Debug)]
 pub enum GgufMetadataValue {
   UInt8(u8),
   Int8(i8),
@@ -22,7 +21,7 @@ pub enum GgufMetadataValue {
 pub fn parse(reader: &mut BufReader<File>, kv_count: u64) -> Result<HashMap<String, GgufMetadataValue>, String> {
   let mut metadata = HashMap::new();
 
-  for i in 0..kv_count {
+  for _ in 0..kv_count {
     // Read the key length
     let mut key_len_bytes = [0u8; 8];
     reader.read_exact(&mut key_len_bytes)

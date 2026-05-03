@@ -1,4 +1,3 @@
-#[derive(Debug)]
 pub struct GgufHeader {
   pub version: u32,
   pub kv_count: u64,

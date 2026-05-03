@@ -12,7 +12,8 @@ pub struct GgufFile {
 
 pub fn load(path: &str) -> Result<GgufFile, String> {
   // Open the file
-  let file = File::open(path).expect("Failed to open file");
+  let file = File::open(path)
+    .map_err(|e| format!("Failed to open file: {}", e))?;
   let mut reader = std::io::BufReader::new(file);
 
   // Read the header
