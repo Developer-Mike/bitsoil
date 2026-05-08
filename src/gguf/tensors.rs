@@ -12,12 +12,31 @@ pub struct GgufTensor {
 pub struct GgufTensorInfo {
   pub name: String,
   pub shape: Vec<u64>,
-  pub quant_type: u32,
+  pub quant_type: GgufQuantType,
   pub offset: u64,
 }
 
 // TODO: Add support for other quant types
 // https://github.com/ggml-org/llama.cpp/blob/d05fe1d7dadbf8943c8f1903fcf65b935ddab839/gguf-py/gguf/constants.py#L3993
+#[allow(dead_code)]
+#[derive(Debug)]
+pub enum GgufQuantType {
+  F32,
+  F16,
+  TernaryBonsai,
+}
+
+impl From<u32> for GgufQuantType {
+  fn from(value: u32) -> Self {
+    match value {
+      0 => GgufQuantType::F32,
+      1 => GgufQuantType::F16,
+      42 => GgufQuantType::TernaryBonsai,
+      _ => panic!("Unknown quantization type: {}", value),
+    }
+  }
+}
+
 #[allow(dead_code)]
 pub enum GgufTensorWeights {
   F16(Vec<f32>),
@@ -82,7 +101,7 @@ fn parse_info(reader: &mut BufReader<File>) -> Result<GgufTensorInfo, String> {
   let mut quant_type_bytes = [0u8; 4];
   reader.read_exact(&mut quant_type_bytes)
     .map_err(|e| format!("Failed to read tensor quantization type: {}", e))?;
-  let quant_type = u32::from_le_bytes(quant_type_bytes);
+  let quant_type = GgufQuantType::from(u32::from_le_bytes(quant_type_bytes));
 
   let mut offset_bytes = [0u8; 8];
   reader.read_exact(&mut offset_bytes)
@@ -101,12 +120,10 @@ fn parse_info(reader: &mut BufReader<File>) -> Result<GgufTensorInfo, String> {
 fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<GgufTensorWeights, String> {
   let num_elements: usize = info.shape.iter().product::<u64>() as usize;
   let element_size: usize = match info.quant_type {
-    0 => Ok(4.0), // f32
-    1 => Ok(2.0), // f16
-    36 => Ok(0.5), // Ternary quantization (Falcon 3)
-    42 => Ok(0.5), // Ternary quantization (Bonsai)
-    _ => Err(format!("Unknown quantization type for calculating size: {}", info.quant_type)),
-  }? as usize;
+    GgufQuantType::F32 => 4.0,
+    GgufQuantType::F16 => 2.0,
+    GgufQuantType::TernaryBonsai => 0.5,
+  } as usize;
   let total_size = num_elements * element_size;
 
   let mut weight_bytes = vec![0u8; total_size];
@@ -115,18 +132,18 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
   reader.read_exact(&mut weight_bytes)
     .map_err(|e| format!("Failed to read tensor weights: {}", e))?;
 
-  let weights: GgufTensorWeights = match info.quant_type {
-    0 => { // f32
-      // TODO
+  Ok(match info.quant_type {
+    GgufQuantType::F32 => {
+      let weights = weight_bytes.chunks_exact(4)
+        .map(|chunk| f32::from_le_bytes(chunk.try_into().unwrap()))
+        .collect();
+      GgufTensorWeights::F32(weights)
     }
-    1 = { // f16
-      // TODO
+    GgufQuantType::F16 => {
+      GgufTensorWeights::F32(vec![0.0; num_elements]) // TODO: Implement actual parsing of ternary weights
     }
-    42 => { // Ternary quantization (Bonsai)
-      // TODO
+    GgufQuantType::TernaryBonsai => {
+      GgufTensorWeights::Ternary(vec![0; num_elements]) // TODO: Implement actual parsing of ternary weights
     }
-    _ => Err(format!("Unknown quantization type for parsing: {}", info.quant_type)),
-  }?;
-
-  Ok(weights)
+  })
 }
