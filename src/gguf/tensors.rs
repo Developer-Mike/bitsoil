@@ -116,7 +116,6 @@ fn parse_info(reader: &mut BufReader<File>) -> Result<GgufTensorInfo, String> {
   })
 }
 
-// TODO: Add support for other quant types
 fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<GgufTensorWeights, String> {
   let num_elements: usize = info.shape.iter().product::<u64>() as usize;
   let element_size: usize = match info.quant_type {
@@ -140,10 +139,14 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
       GgufTensorWeights::F32(weights)
     }
     GgufQuantType::F16 => {
-      GgufTensorWeights::F32(vec![0.0; num_elements]) // TODO: Implement actual parsing of ternary weights
+      let weights = weight_bytes.chunks_exact(2)
+        .map(|chunk| f32::from_le_bytes(chunk.try_into().unwrap()))
+        .collect();
+      GgufTensorWeights::F16(weights)
     }
     GgufQuantType::TernaryBonsai => {
-      GgufTensorWeights::Ternary(vec![0; num_elements]) // TODO: Implement actual parsing of ternary weights
+      let weights = vec![]; // FIXME: Implement
+      GgufTensorWeights::Ternary(weights)
     }
   })
 }
