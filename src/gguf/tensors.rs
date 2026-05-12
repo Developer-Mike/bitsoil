@@ -138,14 +138,14 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
       let num_blocks = num_elements / 64;
       let mut weights = Vec::with_capacity(num_elements);
 
-      for i in 0..num_blocks {
-        let offset = i * 13;
+      for block_i in 0..num_blocks {
+        let offset = block_i * 13;
         let block_weights = &weight_bytes[offset..=offset + 12];
-        let max_block_i = block_weights.len() - 1;
+        let max_byte_i = block_weights.len() - 1;
 
-        for i in 0..max_block_i {
-          let byte = block_weights[i];
-          let last_byte = i == max_block_i;
+        for byte_i in 0..max_block_i {
+          let byte = block_weights[byte_i];
+          let last_byte = byte_i == max_byte_i;
 
           let combined = ((byte as u16) * 243) / 256;
           let base3 = combined % 81;
