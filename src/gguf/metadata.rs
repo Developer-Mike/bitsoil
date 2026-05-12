@@ -3,6 +3,7 @@ use std::io::{BufReader, Read};
 use std::collections::HashMap;
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum GgufMetadataValue {
   UInt8(u8),
   Int8(i8),

@@ -1,10 +1,10 @@
 mod gguf;
+mod tokenizer;
 
 fn main() {
   let bonsai_model = gguf::loader::load("./models/bonsai-1.7.gguf")
     .expect("Failed to load model");
 
-  for (key, tensor) in &bonsai_model.tensors {
-    println!("{key}: {:?}", tensor.info.quant_type);
-  }
+  let tokenized_input = tokenizer::loader::tokenize(&bonsai_model, "This is a test message!")
+    .expect("Failed to tokenize message");
 }
