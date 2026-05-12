@@ -143,7 +143,7 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
         let block_weights = &weight_bytes[offset..=offset + 12];
         let max_byte_i = block_weights.len() - 1;
 
-        for byte_i in 0..max_block_i {
+        for byte_i in 0..max_byte_i {
           let byte = block_weights[byte_i];
           let last_byte = byte_i == max_byte_i;
 
