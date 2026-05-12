@@ -22,7 +22,6 @@ pub struct GgufTensorInfo {
 #[derive(Debug)]
 pub enum GgufQuantType {
   F32,
-  F16,
   TernaryBonsai,
 }
 
@@ -30,7 +29,6 @@ impl From<u32> for GgufQuantType {
   fn from(value: u32) -> Self {
     match value {
       0 => GgufQuantType::F32,
-      1 => GgufQuantType::F16,
       42 => GgufQuantType::TernaryBonsai,
       _ => panic!("Unknown quantization type: {}", value),
     }
@@ -118,12 +116,10 @@ fn parse_info(reader: &mut BufReader<File>) -> Result<GgufTensorInfo, String> {
 
 fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<GgufTensorWeights, String> {
   let num_elements: usize = info.shape.iter().product::<u64>() as usize;
-  let element_size: usize = match info.quant_type {
-    GgufQuantType::F32 => 4.0,
-    GgufQuantType::F16 => 2.0,
-    GgufQuantType::TernaryBonsai => 0.5,
-  } as usize;
-  let total_size = num_elements * element_size;
+  let total_size: usize = match info.quant_type {
+    GgufQuantType::F32 => num_elements * 4,
+    GgufQuantType::TernaryBonsai => (num_elements / 64) * 13,
+  };
 
   let mut weight_bytes = vec![0u8; total_size];
   reader.seek(SeekFrom::Start(info.offset))
@@ -137,12 +133,6 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
         .map(|chunk| f32::from_le_bytes(chunk.try_into().unwrap()))
         .collect();
       GgufTensorWeights::F32(weights)
-    }
-    GgufQuantType::F16 => {
-      let weights = weight_bytes.chunks_exact(2)
-        .map(|chunk| f32::from_le_bytes(chunk.try_into().unwrap()))
-        .collect();
-      GgufTensorWeights::F16(weights)
     }
     GgufQuantType::TernaryBonsai => {
       let weights = vec![]; // FIXME: Implement
