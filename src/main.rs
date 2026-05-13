@@ -7,4 +7,6 @@ fn main() {
 
   let tokenized_input = tokenizer::tokenize(&bonsai_model, "This is a test message!")
     .expect("Failed to tokenize message");
+
+  println!("Tokenized input: {:?}", tokenized_input);
 }

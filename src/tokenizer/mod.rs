@@ -16,6 +16,4 @@ pub fn tokenize(file: &GgufFile, input: &str) -> Result<Vec<u32>, String> {
     },
     _ => return Err(format!("Unsupported tokenizer model metadata type: {:?}", model_gguf_value)),
   }
-
-  Err("Tokenizer model metadata is not a string".to_string())
 }

@@ -20,6 +20,29 @@ pub enum GgufMetadataValue {
   Float64(f64),
 }
 
+impl GgufMetadataValue {
+  pub fn as_uint32(&self) -> Option<u32> {
+    match self {
+      GgufMetadataValue::UInt32(v) => Some(*v),
+      _ => None,
+    }
+  }
+
+  pub fn as_string(&self) -> Option<&String> {
+    match self {
+      GgufMetadataValue::String(s) => Some(s),
+      _ => None,
+    }
+  }
+
+  pub fn as_array(&self) -> Option<&Vec<GgufMetadataValue>> {
+    match self {
+      GgufMetadataValue::Array(arr) => Some(arr),
+      _ => None,
+    }
+  }
+}
+
 pub fn parse(reader: &mut BufReader<File>, kv_count: u64) -> Result<HashMap<String, GgufMetadataValue>, String> {
   let mut metadata = HashMap::new();
 
