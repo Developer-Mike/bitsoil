@@ -18,9 +18,10 @@ pub fn tokenize(file: &GgufFile, input: &str) -> Result<Vec<u32>, String> {
     .as_uint32().ok_or("Tokenizer metadata 'tokenizer.ggml.eos_token_id' is not a uint64".to_string())? as u32;
 
   let pre_tokenized_input = pre_tokenize(input);
-  println!("Pre-tokenized input: {:?}", pre_tokenized_input);
+  let merged_pairs = merge_pairs(pre_tokenized_input, &merges);
+  let token_ids = lookup_tokens(&merged_pairs, &tokens);
 
-  Err("GPT-2 tokenizer is not implemented yet".to_string())
+  Ok(token_ids)
 }
 
 fn pre_tokenize(input: &str) -> Vec<&str> {
@@ -28,4 +29,13 @@ fn pre_tokenize(input: &str) -> Vec<&str> {
   let matches = pre_tokenize_regex.find_iter(input);
 
   matches.map(|m: regex::Match| m.as_str()).collect()
+}
+
+fn merge_pairs(tokens: Vec<&str>, merges: &Vec<&str>) -> Vec<u32> {
+  vec![]
+}
+
+fn lookup_tokens(pairs: &Vec<u32>, tokens: &Vec<&str>) -> Vec<u32> {
+  // TODO: HashMap/Set
+  pairs.to_vec()
 }
