@@ -28,14 +28,14 @@ impl GgufMetadataValue {
     }
   }
 
-  pub fn as_string(&self) -> Option<&String> {
+  pub fn as_string(&self) -> Option<&str> {
     match self {
       GgufMetadataValue::String(s) => Some(s),
       _ => None,
     }
   }
 
-  pub fn as_array(&self) -> Option<&Vec<GgufMetadataValue>> {
+  pub fn as_array(&self) -> Option<&[GgufMetadataValue]> {
     match self {
       GgufMetadataValue::Array(arr) => Some(arr),
       _ => None,
