@@ -14,6 +14,14 @@
         rustc cargo
         rust-analyzer
       ];
+
+      shellHook = ''
+        if [ ! -f ./models/bonsai-1.7b.gguf ]; then
+          echo "Downloading bonsai-1.7b.gguf..."
+          mkdir -p ./models
+          curl -L -o ./models/bonsai-1.7b.gguf https://huggingface.co/prism-ml/Ternary-Bonsai-1.7B-gguf/resolve/main/Ternary-Bonsai-1.7B-F16.gguf
+        fi
+      '';
     };
   };
 }

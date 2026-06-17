@@ -21,6 +21,7 @@ pub struct GgufTensorInfo {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum GgufQuantType {
+  F16,
   F32,
   TernaryBonsai,
 }
@@ -29,6 +30,7 @@ impl From<u32> for GgufQuantType {
   fn from(value: u32) -> Self {
     match value {
       0 => GgufQuantType::F32,
+      1 => GgufQuantType::F16,
       42 => GgufQuantType::TernaryBonsai,
       _ => panic!("Unknown quantization type: {}", value),
     }
@@ -117,6 +119,7 @@ fn parse_info(reader: &mut BufReader<File>) -> Result<GgufTensorInfo, String> {
 fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<GgufTensorWeights, String> {
   let num_elements: usize = info.shape.iter().product::<u64>() as usize;
   let total_size: usize = match info.quant_type {
+    GgufQuantType::F16 => num_elements * 2,
     GgufQuantType::F32 => num_elements * 4,
     GgufQuantType::TernaryBonsai => (num_elements / 64) * 13,
   };
@@ -128,6 +131,27 @@ fn parse_weights(reader: &mut BufReader<File>, info: &GgufTensorInfo) -> Result<
     .map_err(|e| format!("Failed to read tensor weights: {}", e))?;
 
   Ok(match info.quant_type {
+    GgufQuantType::F16 => {
+      let weights = weight_bytes.chunks_exact(2)
+        .map(|chunk| {
+          let u32Bits = u16::from_le_bytes(chunk.try_into().unwrap()) as u32;
+          let sign = (u32Bits >> 15) & 0x1;
+          let exponent = (u32Bits >> 10) & 0x1F;
+          let mantissa = u32Bits & 0x3FF;
+
+          let f32Bits = if exponent == 0 {
+            sign << 31
+          } else if exponent == 0x1F {
+            (sign << 31) | (0xFF << 23) | (mantissa << 13)
+          } else {
+            let new_exponent = exponent + (127 - 15);
+            (sign << 31) | (new_exponent << 23) | (mantissa << 13)
+          };
+          f32::from_bits(f32Bits)
+        })
+        .collect();
+      GgufTensorWeights::F16(weights)
+    }
     GgufQuantType::F32 => {
       let weights = weight_bytes.chunks_exact(4)
         .map(|chunk| f32::from_le_bytes(chunk.try_into().unwrap()))
